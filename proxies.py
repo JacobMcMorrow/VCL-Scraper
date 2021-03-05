@@ -8,7 +8,7 @@ from itertools import cycle
 from spoofing import Headers
 
 # Global macro for now, but replace when multiple proxy sources available.
-PROXIES_URL = 'https://free-proxy-list.net/'
+PROXIES_URL = "https://free-proxy-list.net/"
 
 class Proxies:
     """"""
@@ -66,14 +66,14 @@ class Proxies:
     def _get_raw_proxies(self):
         """"""
         response = requests.get(PROXIES_URL, headers=self.headers.get_headers())
-        response.encode = 'utf-8'
+        response.encode = "utf-8"
         soup = BeautifulSoup(response.text, "html.parser")
 
-        return soup.select('#proxylisttable tr')[1:]
+        return soup.select("#proxylisttable tr")[1:]
 
     def _process_raw_proxy(self, raw_proxy, proxies):
         """"""
-        proxy_components = raw_proxy.select('td')
+        proxy_components = raw_proxy.select("td")
         proxy = ""
 
         if proxy_components != [] and self._is_secure(proxy_components):
