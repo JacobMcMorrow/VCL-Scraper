@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 """"""
-from spoofing import Headers
 from proxies import Proxies
+from spoofing import Headers
 
 
 if __name__ == "__main__":
