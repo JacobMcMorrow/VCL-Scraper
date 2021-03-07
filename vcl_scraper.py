@@ -2,10 +2,12 @@
 
 """"""
 from proxies import Proxies
+from scraper import Scraper
 from spoofing import Headers
 
 
 if __name__ == "__main__":
     headers = Headers()
     proxies = Proxies(headers)
-    proxy = proxies.get_proxies("http://us.vclart.net/vcl/")
+    scraper = Scraper(headers, proxies)
+    scraper.scrape()
