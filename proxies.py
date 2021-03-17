@@ -29,6 +29,7 @@ class Proxies:
     def _check_proxies(self, url):
         """"""
         proxies = self._collect_proxies()
+        # Randomize pool so we don't select the same one each call.
         proxy_pool = cycle(proxies)
 
         for i in range(1, 11):

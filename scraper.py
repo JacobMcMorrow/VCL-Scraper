@@ -44,13 +44,16 @@ class Scraper:
 
     def _scrape_artist(self, artist):
         """"""
-        # self._current_artist = artist.get("href").split("/")[-2]
+        self._current_artist = artist.get("href").split("/")[-2]
         # self._current_artist = "Selunca"
-        self._current_artist = "Drakhenliche"
+        # self._current_artist = "Drakhenliche"
+        # self._current_artist = "Drak"
         # print(self._current_artist)
-        # artist_url = BASE_URL + artist.get("href")
+        artist_url = BASE_URL + artist.get("href")
         # artist_url = "http://us.vclart.net/vcl/Artists/Selunca/"
-        artist_url = "http://us.vclart.net/vcl/Artists/Drakhenliche/"
+        # artist_url = "http://us.vclart.net/vcl/Artists/Drakhenliche/"
+        # artist_url = "http://us.vclart.net/vcl/Artists/Drak/"
+        directory_path = os.path.join("Artists", self._current_artist)
 
         # Make sure a directory exists for this artist.
         if not os.path.exists(os.path.join("Artists", self._current_artist)):
@@ -63,19 +66,50 @@ class Scraper:
         media_tables = tables[1:-1]
 
         for table in media_tables:
-            if table.select("tr")[0].text.find("Directories") >= 0:
+            if table.select("tr")[0].text.find("Artist Information") >= 0:
+                print("Artist Info")
+                self._collect_artist_info(artist_url, directory_path,
+                                          table.select("tr"))
+            elif table.select("tr")[0].text.find("Directories") >= 0:
                 print("Directories")
-                # self._collect_directories(artist_url, table.select("tr"))
+                self._collect_directories(artist_url, directory_path,
+                                          table.select("tr"))
             elif table.select("tr")[0].text.find("Images") >= 0:
                 print("Images")
-                # directory_path = os.path.join("Artists", self._current_artist)
-                # self._collect_images(artist_url, directory_path,
+                self._collect_images(artist_url, directory_path,
                                      table.select("tr"))
             elif table.select("tr")[0].text.find("Files") >= 0:
                 print("Files")
+                self._collect_files(artist_url, directory_path,
+                                    table.select("tr"))
 
     # Rename these to something more appropriate.
-    def _collect_directories(self, artist_url, table):
+    def _collect_artist_info(self, artist_url, directory_path, table):
+        """"""
+        info_rows = table[1:]
+
+        for row in info_rows:
+            artist_info = row.th.contents
+            lable = artist_info[0]
+            contents = artist_info[1].text
+            self._write_artist_info(contents, directory_path, lable)
+
+    def _write_artist_info(self, contents, directory_path, lable):
+        """"""
+        file_path = os.path.join(directory_path, "Artist Info.txt")
+        info_line = f"{lable}: {contents}\n"
+
+        try:
+            with open(file_path, "a") as file:
+                file.write(info_line)
+
+        except Exception as e:
+            print(e)
+            # Write a better error message, come up with a set descriptive set
+            # up and apply that to each file.
+            print("Error connecting")
+
+    def _collect_directories(self, artist_url, directory_path, table):
         """"""
         directory_rows = table[1:]
 
@@ -83,21 +117,12 @@ class Scraper:
             directory_info = row.select("a")[0]
             directory_name = directory_info.getText()
             directory_url = artist_url + directory_info.get("href")
-            # print(directory_url)
-            self._scrape_directory(directory_name, directory_url)
+            self._scrape_directory(directory_name, directory_path,
+                                   directory_url)
 
-        # directory_info = directory_rows[0].select("a")[0]
-        # directory_name = directory_info.getText()
-        # directory_url = artist_url + directory_info.get("href")
-        # print(directory_url)
-        # self._scrape_directory(directory_name, directory_url)
-
-    def _scrape_directory(self, directory_name, directory_url):
+    def _scrape_directory(self, directory_name, directory_path, directory_url):
         """"""
-        artist_path = os.path.join("Artists", self._current_artist)
-        print(artist_path)
-        directory_path = os.path.join(artist_path, directory_name)
-        print(directory_path)
+        directory_path = os.path.join(directory_path, directory_name)
 
         # Make sure a directory exists for this directory.
         if not os.path.exists(directory_path):
@@ -107,22 +132,64 @@ class Scraper:
         media_tables = tables[1:-1]
 
         for table in media_tables:
-            if table.select("tr")[0].text.find("Images") >= 0:
-                print("Images")
+            if table.select("tr")[0].text.find("Directories") >= 0:
+                print("Directories/Directories")
+                self._collect_directories(directory_url, directory_path,
+                                          table.select("tr"))
+            elif table.select("tr")[0].text.find("Images") >= 0:
+                print("Directories/Images")
                 self._collect_images(directory_url, directory_path,
                                      table.select("tr"))
             elif table.select("tr")[0].text.find("Files") >= 0:
-                print("Files")
+                print("Directories/Files")
+                self._collect_files(directory_url, directory_path,
+                                    table.select("tr"))
 
-    def _collect_files(self):
+    def _collect_files(self, url, directory_path, table):
         """"""
-        raise NotImplementedError
+        file_rows = table[1:]
+        directory_path = os.path.join(directory_path, "Files")
+
+        # Make sure a directory exists for these files.
+        if not os.path.exists(directory_path):
+            os.mkdir(directory_path)
+
+        for row in file_rows:
+            file_content = row.select("a")
+            file_name = file_content[0].text
+            file_url_end = file_content[0].get("href")
+            file_url = url + file_url_end
+            self._download_file(directory_path, file_name, file_url)
+
+    def _download_file(self, directory_path, file_name, file_url):
+        """"""
+        file_name_computer = os.path.join(directory_path, file_name)
+
+        try:
+            print(f"Downloading file: {file_name}")
+
+            # Get file.
+            response = requests.get(file_url,
+                                    proxies=self._current_proxies,
+                                    headers=self.headers.get_headers())
+            response.encode = "utf-8"
+            response.raise_for_status()
+
+            # Move to separate function? Also, check if file already exists?
+            with open(file_name_computer, "wb") as file:
+                for chunk in response.iter_content(100000):
+                    file.write(chunk)
+
+        except Exception as e:
+            print(e)
+            # Write a better error message, come up with a set descriptive set
+            # up and apply that to each file.
+            print("Error connecting")
 
     def _collect_images(self, url, directory_path, table):
         """"""
         image_rows = table[2:]
         directory_path = os.path.join(directory_path, "Images")
-        print(url)
 
         # Make sure a directory exists for these images.
         if not os.path.exists(directory_path):
@@ -174,7 +241,6 @@ class Scraper:
             image_url = image_url_base + image_name
 
         file_name = os.path.join(directory_path, image_name)
-        # print(file_name)
 
         try:
             print(f"Downloading image: {image_name}")
