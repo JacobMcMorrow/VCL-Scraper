@@ -11,6 +11,51 @@ BASE_URL = "http://us.vclart.net"
 ARTISTS_URL = "http://us.vclart.net/vcl/Artists/"
 AUTHORS_URL = ""
 
+# Map from invalid URL symbols to their replacement.
+URL_SYMBOLS_MAP = {
+    "%": "%25",
+    "#": "%23",
+}
+
+# Invalid directory name symbols.
+# Update list of invalid symbols for ascii chars?
+FORBIDDEN_SYMBOLS = [
+    "<",
+    ">",
+    ":",
+    "\"",
+    "/",
+    "\\",
+    "|",
+    "?",
+    "*",
+]
+
+RESERVED_NAMES = [
+    "CON",
+    "PRN",
+    "AUX",
+    "NUL",
+    "COM1",
+    "COM2",
+    "COM3",
+    "COM4",
+    "COM5",
+    "COM6",
+    "COM7",
+    "COM8",
+    "COM9",
+    "LPT1",
+    "LPT2",
+    "LPT3",
+    "LPT4",
+    "LPT5",
+    "LPT6",
+    "LPT7",
+    "LPT8",
+    "LPT9",
+]
+
 class Scraper:
     """"""
 
@@ -20,6 +65,7 @@ class Scraper:
         self.proxies = proxies
         self._current_artist = None
         self._current_proxies = None
+        self._reserved_name_count = 0
 
     def scrape(self):
         """"""
@@ -48,11 +94,17 @@ class Scraper:
         # self._current_artist = "Selunca"
         # self._current_artist = "Drakhenliche"
         # self._current_artist = "Drak"
-        # print(self._current_artist)
+        # self._current_artist = "Amy-Simmonds"
+        # self._current_artist = "Melissa-Camic"
+        # self._current_artist = "DJ-Sunny-D"
+        print(self._current_artist)
         artist_url = BASE_URL + artist.get("href")
         # artist_url = "http://us.vclart.net/vcl/Artists/Selunca/"
         # artist_url = "http://us.vclart.net/vcl/Artists/Drakhenliche/"
         # artist_url = "http://us.vclart.net/vcl/Artists/Drak/"
+        # artist_url = "http://us.vclart.net/vcl/Artists/Amy-Simmonds/"
+        # artist_url = "http://us.vclart.net/vcl/Artists/Melissa-Camic/"
+        # artist_url = "http://us.vclart.net/vcl/Artists/DJ-Sunny-D/"
         directory_path = os.path.join("Artists", self._current_artist)
 
         # Make sure a directory exists for this artist.
@@ -86,6 +138,7 @@ class Scraper:
     # Rename these to something more appropriate.
     def _collect_artist_info(self, artist_url, directory_path, table):
         """"""
+        self._write_artist_info(artist_url, directory_path, "VCL")
         info_rows = table[1:]
 
         for row in info_rows:
@@ -96,6 +149,7 @@ class Scraper:
 
     def _write_artist_info(self, contents, directory_path, lable):
         """"""
+        # TODO: Make sure we're not writing the same info over and over.
         file_path = os.path.join(directory_path, "Artist Info.txt")
         info_line = f"{lable}: {contents}\n"
 
@@ -116,9 +170,32 @@ class Scraper:
         for row in directory_rows:
             directory_info = row.select("a")[0]
             directory_name = directory_info.getText()
+            directory_name = self._correct_name(directory_name)
             directory_url = artist_url + directory_info.get("href")
             self._scrape_directory(directory_name, directory_path,
                                    directory_url)
+
+    def _correct_name(self, file_name):
+        """"""
+        # Remove any invalide symbols from the file name.
+        for symbol in FORBIDDEN_SYMBOLS:
+            if file_name.find(symbol) >= 0:
+                file_name = file_name.replace(symbol, "")
+
+        # Remove spaces and periods from the end of the file name.
+        file_name = file_name.rstrip(". ")
+
+        # Get base name
+        split_file_name = file_name.split(".")
+        basename = split_file_name[0]
+
+        # Check if file name is a reserved name.
+        if len(split_file_name) == 2 and basename in RESERVED_NAMES:
+            # TODO: Improve this naming convention.
+            self._reserved_name_count += 1
+            file_name = f"reserved_name{self._reserved_name_count}"
+
+        return file_name        
 
     def _scrape_directory(self, directory_name, directory_path, directory_url):
         """"""
@@ -231,15 +308,9 @@ class Scraper:
 
     def _download_image(self, directory_path, image_name, image_url_base):
         """"""
-        # Correct issue in names with %. Keep an eye out for other wrong
-        # symbols. If this becomes too complex, move to a new function.
-        if image_name.find("%") >= 0:
-            edited_name = image_name
-            edited_name.replace("%", "%25")
-            image_url = image_url_base + edited_name
-        else:
-            image_url = image_url_base + image_name
-
+        image_url = self._create_image_url(image_name, image_url_base)
+        # TODO: Make sure file name's allowed.
+        image_name = self._correct_name(image_name)
         file_name = os.path.join(directory_path, image_name)
 
         try:
@@ -262,3 +333,14 @@ class Scraper:
             # Write a better error message, come up with a set descriptive set
             # up and apply that to each file.
             print("Error connecting")
+
+    def _create_image_url(self, image_name, image_url_base):
+        """"""
+        # Replace any invalid URL symbols found in the image names.
+        for symbol in URL_SYMBOLS_MAP.keys():
+            if image_name.find(symbol) >= 0:
+                image_name = image_name.replace(symbol, URL_SYMBOLS_MAP[symbol])
+
+        image_url = image_url_base + image_name
+
+        return image_url
