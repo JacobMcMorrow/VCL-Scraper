@@ -13,9 +13,10 @@ PROXIES_URL = "https://free-proxy-list.net/"
 class Proxies:
     """"""
 
-    def __init__(self, headers):
+    def __init__(self, headers, logger):
         """"""
         self.headers = headers
+        self.logger = logger
 
     def get_proxies(self, url):
         """"""

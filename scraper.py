@@ -15,6 +15,8 @@ AUTHORS_URL = ""
 URL_SYMBOLS_MAP = {
     "%": "%25",
     "#": "%23",
+    ",": "%2C",
+    "ñ": "%F1",
 }
 
 # Invalid directory name symbols.
@@ -59,9 +61,10 @@ RESERVED_NAMES = [
 class Scraper:
     """"""
 
-    def __init__(self, headers, proxies):
+    def __init__(self, headers, proxies, logger):
         """"""
         self.headers = headers
+        self.logger = logger
         self.proxies = proxies
         self._current_artist = None
         self._current_proxies = None
@@ -82,6 +85,9 @@ class Scraper:
         artists_table = tables[4]
         artists = artists_table.select("a")
 
+        # Log the start of scraping artists.
+        self.logger.log_info("Scraping artists.")
+
         # Look into making a generator to ease memory.
         for artist in artists:
             self._scrape_artist(artist)
@@ -97,7 +103,6 @@ class Scraper:
         # self._current_artist = "Amy-Simmonds"
         # self._current_artist = "Melissa-Camic"
         # self._current_artist = "DJ-Sunny-D"
-        print(self._current_artist)
         artist_url = BASE_URL + artist.get("href")
         # artist_url = "http://us.vclart.net/vcl/Artists/Selunca/"
         # artist_url = "http://us.vclart.net/vcl/Artists/Drakhenliche/"
@@ -111,9 +116,18 @@ class Scraper:
         if not os.path.exists(os.path.join("Artists", self._current_artist)):
             os.mkdir(os.path.join("Artists", self._current_artist))
 
+        # Indicate the start of work for this artist and log start.
+        start_message = (
+            f"Scraping artist: {self._current_artist} "
+            f"Artist URL: {artist_url}"
+        )
+        print(start_message)
+        self.logger.log_info(start_message)
+
         # Get new proxy for this artist.
         self._current_proxies = self.proxies.get_proxies(ARTISTS_URL)
 
+        # Get tables to download images, files, collect directories and info.
         tables = self._collect_tables(artist_url)
         media_tables = tables[1:-1]
 
@@ -138,9 +152,13 @@ class Scraper:
     # Rename these to something more appropriate.
     def _collect_artist_info(self, artist_url, directory_path, table):
         """"""
+        # Write the artist's name and VCL URL to the artist info file.
         self._write_artist_info(artist_url, directory_path, "VCL")
+
+        # Select the rows that only include artist information.
         info_rows = table[1:]
 
+        # Write each row of artist info to the artist info file.
         for row in info_rows:
             artist_info = row.th.contents
             lable = artist_info[0]
@@ -158,10 +176,13 @@ class Scraper:
                 file.write(info_line)
 
         except Exception as e:
-            print(e)
-            # Write a better error message, come up with a set descriptive set
-            # up and apply that to each file.
-            print("Error connecting")
+            error_message = (
+                f"An error of type {type(e).__name__} occured while writing "
+                f"artist info in {directory_path}. Details: {e}"
+            )
+
+            self.logger.log_error(error_message)
+            print(error_message)
 
     def _collect_directories(self, artist_url, directory_path, table):
         """"""
@@ -191,9 +212,10 @@ class Scraper:
 
         # Check if file name is a reserved name.
         if len(split_file_name) == 2 and basename in RESERVED_NAMES:
+            extension = split_file_name[-1]
             # TODO: Improve this naming convention.
             self._reserved_name_count += 1
-            file_name = f"reserved_name{self._reserved_name_count}"
+            file_name = f"reserved_name{self._reserved_name_count}.{extension}"
 
         return file_name        
 
@@ -258,10 +280,13 @@ class Scraper:
                     file.write(chunk)
 
         except Exception as e:
-            print(e)
-            # Write a better error message, come up with a set descriptive set
-            # up and apply that to each file.
-            print("Error connecting")
+            error_message = (
+                f"An error of type {type(e).__name__} occured while downloading"
+                f" the file {file_name}. Details: {e}"
+            )
+
+            self.logger.log_error(error_message)
+            print(error_message)
 
     def _collect_images(self, url, directory_path, table):
         """"""
@@ -290,10 +315,13 @@ class Scraper:
             return soup.select("table")
 
         except Exception as e:
-            print(e)
-            # Write a better error message, come up with a set descriptive set
-            # up and apply that to each file.
-            print("Error connecting")
+            error_message = (
+                f"An error of type {type(e).__name__} occured while collecting "
+                f"the tables from the page {url}. Details: {e}"
+            )
+
+            self.logger.log_error(error_message)
+            print(error_message)
 
     def _scrape_page(self, directory_path, image_url_base, page_url):
         """"""
@@ -309,7 +337,6 @@ class Scraper:
     def _download_image(self, directory_path, image_name, image_url_base):
         """"""
         image_url = self._create_image_url(image_name, image_url_base)
-        # TODO: Make sure file name's allowed.
         image_name = self._correct_name(image_name)
         file_name = os.path.join(directory_path, image_name)
 
@@ -329,10 +356,13 @@ class Scraper:
                     image_file.write(chunk)
 
         except Exception as e:
-            print(e)
-            # Write a better error message, come up with a set descriptive set
-            # up and apply that to each file.
-            print("Error connecting")
+            error_message = (
+                f"An error of type {type(e).__name__} occured while downloading"
+                f" the image {image_name}. Details: {e}"
+            )
+
+            self.logger.log_error(error_message)
+            print(error_message)
 
     def _create_image_url(self, image_name, image_url_base):
         """"""
