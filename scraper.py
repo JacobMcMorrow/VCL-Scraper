@@ -17,7 +17,8 @@ URL_SYMBOLS_MAP = {
     "#": "%23",
     ",": "%2C",
     "ñ": "%F1",
-    "½": "%BD"
+    "½": "%BD",
+    "'": "%27",
 }
 
 # Invalid directory name symbols.
@@ -90,10 +91,10 @@ class Scraper:
         self.logger.log_info("Scraping artists.")
 
         # Look into making a generator to ease memory.
-        for artist in artists:
-            self._scrape_artist(artist)
+        # for artist in artists:
+        #     self._scrape_artist(artist)
 
-        # self._scrape_artist(artists[0])
+        self._scrape_artist(artists[0])
 
     def _scrape_artist(self, artist):
         """"""
@@ -105,7 +106,7 @@ class Scraper:
         # self._current_artist = "Melissa-Camic"
         # self._current_artist = "DJ-Sunny-D"
         # self._current_artist = "Michael-Angel-Pena"
-        # self._current_artist = "Antiroo"
+        self._current_artist = "Antiroo"
         artist_url = BASE_URL + artist.get("href")
         # artist_url = "http://us.vclart.net/vcl/Artists/Selunca/"
         # artist_url = "http://us.vclart.net/vcl/Artists/Drakhenliche/"
@@ -114,7 +115,7 @@ class Scraper:
         # artist_url = "http://us.vclart.net/vcl/Artists/Melissa-Camic/"
         # artist_url = "http://us.vclart.net/vcl/Artists/DJ-Sunny-D/"
         # artist_url = "http://us.vclart.net/vcl/Artists/Michael-Angel-Pena/"
-        # artist_url = "http://us.vclart.net/vcl/Artists/Antiroo/"
+        artist_url = "http://us.vclart.net/vcl/Artists/Antiroo/"
         directory_path = os.path.join("Artists", self._current_artist)
 
         # Make sure a directory exists for this artist.
@@ -132,6 +133,7 @@ class Scraper:
         # Get new proxy for this artist.
         self._current_proxies = self.proxies.get_proxies(ARTISTS_URL)
 
+        '''
         # Get tables to download images, files, collect directories and info.
         tables = self._collect_tables(artist_url)
         media_tables = tables[1:-1]
@@ -153,6 +155,7 @@ class Scraper:
                 print("Files")
                 self._collect_files(artist_url, directory_path,
                                     table.select("tr"))
+        '''
 
     # Rename these to something more appropriate.
     def _collect_artist_info(self, artist_url, directory_path, table):

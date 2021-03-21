@@ -79,8 +79,8 @@ class Proxies:
 
         except Exception as e:
             error_message = (
-                f"An error of type {type(e).__name__} collecting raw proxies. "
-                f"Details: {e}"
+                f"An error of type {type(e).__name__} occured collecting raw "
+                f"proxies. Details: {e}"
             )
 
             self.logger.log_error(error_message)
