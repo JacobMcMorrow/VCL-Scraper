@@ -67,11 +67,24 @@ class Proxies:
 
     def _get_raw_proxies(self):
         """"""
-        response = requests.get(PROXIES_URL, headers=self.headers.get_headers())
-        response.encode = "utf-8"
-        soup = BeautifulSoup(response.text, "html.parser")
+        try:
+            response = requests.get(PROXIES_URL,
+                                    headers=self.headers.get_headers())
+            response.encode = "utf-8"
+            response.raise_for_status()
 
-        return soup.select("#proxylisttable tr")[1:]
+            soup = BeautifulSoup(response.text, "html.parser")
+
+            return soup.select("#proxylisttable tr")[1:]
+
+        except Exception as e:
+            error_message = (
+                f"An error of type {type(e).__name__} collecting raw proxies. "
+                f"Details: {e}"
+            )
+
+            self.logger.log_error(error_message)
+            print(error_message)
 
     def _process_raw_proxy(self, raw_proxy, proxies):
         """"""

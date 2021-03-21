@@ -17,6 +17,7 @@ URL_SYMBOLS_MAP = {
     "#": "%23",
     ",": "%2C",
     "ñ": "%F1",
+    "½": "%BD"
 }
 
 # Invalid directory name symbols.
@@ -103,6 +104,8 @@ class Scraper:
         # self._current_artist = "Amy-Simmonds"
         # self._current_artist = "Melissa-Camic"
         # self._current_artist = "DJ-Sunny-D"
+        # self._current_artist = "Michael-Angel-Pena"
+        # self._current_artist = "Antiroo"
         artist_url = BASE_URL + artist.get("href")
         # artist_url = "http://us.vclart.net/vcl/Artists/Selunca/"
         # artist_url = "http://us.vclart.net/vcl/Artists/Drakhenliche/"
@@ -110,6 +113,8 @@ class Scraper:
         # artist_url = "http://us.vclart.net/vcl/Artists/Amy-Simmonds/"
         # artist_url = "http://us.vclart.net/vcl/Artists/Melissa-Camic/"
         # artist_url = "http://us.vclart.net/vcl/Artists/DJ-Sunny-D/"
+        # artist_url = "http://us.vclart.net/vcl/Artists/Michael-Angel-Pena/"
+        # artist_url = "http://us.vclart.net/vcl/Artists/Antiroo/"
         directory_path = os.path.join("Artists", self._current_artist)
 
         # Make sure a directory exists for this artist.
